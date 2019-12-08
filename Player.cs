@@ -5,144 +5,89 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
 
-    public ControllerColliderHit player_character;          // Assigning ControllerColliderHit component to player
-    public int playerHealth = 100;
-    public int moneyCounter = 0;
+    private CharacterController player;
 
-    public bool hasWeapon = false;
+    public bool hasToken;
+    public bool isBuyingPotion;
 
-    private Enemy enemy;
-    private Money money;
-    private Gems gem;
-    private Key key;
-    private Buying_Weapon weapon;
-
+    public int health;
 
     // Start is called before the first frame update
     void Start()
     {
-        // Finding the object script and assigning it to each corresponding variable
-        enemy = FindObjectOfType<Enemy>();
-        money = FindObjectOfType<Money>();
-        gem = FindObjectOfType<Gems>();
-        key = FindObjectOfType<Key>();
-        weapon = FindObjectOfType<Buying_Weapon>();
+        // Setting buying potion to FALSE
+        isBuyingPotion = false;
+        health = 100;
     }
 
     // Update is called once per frame
     void Update()
     {
-        
-    }
-
-    // When player controller collider COLLIDES with another object
-    // Using a SWITCH statement
-    private void OnControllerColliderHit(ControllerColliderHit hit)
-    {
-       // Switch each CASE string with the SWITCH statement
-       // This is when the player collides with the corresponding object
-       switch (hit.gameObject.tag)
+        // If the player is buying the potion
+        // And if the player presses 'b' key the call the Buying Potion function from the UI script
+        if (isBuyingPotion)
         {
-            // If it is an ENEMY
-            // If the player does not have a weapon
-            // Call the Damage function from the Enemy Script
-            // Call the EnemyKilled function from the Enemy Script
-            case "Enemy":
-                if (!hasWeapon)
-                {
-                    enemy.Damage(10);       // Performs 10 damage
-                }
-                else
-                {
-                    enemy.EnemyKilled();    // Kills enemy
-                }
-                break;
-            
-            // If it is a MONEY object
-            // Call the MoneyCollected funtion from the Money Script
-            // Destroy the object after the function is finished running
-            case "Money":
-                money.MoneyCollected();
-                Destroy(hit.gameObject);
-                break;
-
-            // If it is a Gem object
-            // Call the GemCollected function from the Gem Script
-            // Destroy the object after the function is finished running
-            case "Gem":
-                gem.GemCollected();
-                Destroy(hit.gameObject);
-                break;
-
-            // If it is a Key object
-            // Call th KeyCollected function from the Key Script
-            case "Key":
-                key.KeyCollected();
-                break;
-
-            // If it is a Door
-            // If the player has the key
-            // THEN print text and destroy object
-            // OTHERWISE print text
-            case "Door":
-                if (key.hasKey)
-                {
-                    Debug.Log("You unlocked the door.");
-                    Destroy(hit.gameObject);
-                }
-                else
-                {
-                    Debug.Log("You need a key to unlock this door.");
-                }
-                break;
-
-            // If it is a Weapon object
-            // Call the BuyingWeapon function from the Weapon Script
-            case "Weapon":
-                weapon.BuyingWeapon();
-                break;
-
-            //If it is a Health Pack
-            // Call the ReplenishHealth function 
-            // Destroy object
-            case "Health_Pack":
-                ReplenishHealth(100);       // Replenishes 100 health
-                Destroy(hit.gameObject);
-                break;
-
-            // If the object is a Hazard
-            // Print out text
-            // Subtract 20 from the playerHealth variable
-            // Print out how much health is remaining
-            case "Hazards":
-                Debug.Log("You have taken damage!");
-                playerHealth -= 5;
-                Debug.Log(string.Format("You have {0} left", playerHealth));
-                break;
+            if (Input.GetKey("b"))
+            {
+                FindObjectOfType<UI_Manager>().BuyingPotion();
+            }
         }
     }
 
-    // Respawn function to respawn the player when their health is below 0
-    // Disables the player
-    // THEN changes the position of the player to a given Vector3
-    // Enables the player
-    // Sets the playerHealth to 100
-    public void Respawn()
+    // When the player enters a collder function
+    private void OnTriggerEnter(Collider other)
     {
-            gameObject.GetComponent<CharacterController>().enabled = false;
-            gameObject.GetComponent<Transform>().position = new Vector3(0f, 1.2f, -5f);
-            gameObject.GetComponent<CharacterController>().enabled = true;
-            playerHealth = 100;
+        // If the player collides with the collider called SHOP
+        // Then call the Display Shop Text function from the UI script
+        if (other.gameObject.tag == "Shop")
+        {
+            FindObjectOfType<UI_Manager>().DisplayShopText1();
+        }
+
+        // If the player collides with the collider called TOKEN
+        // Then call the Display Invenroty funciton from the UI script
+        // Find the variable SCORE rom the UI script and add 1 
+        if (other.gameObject.tag == "Token")
+        {
+            Destroy(other.gameObject);
+            hasToken = true;
+            FindObjectOfType<UI_Manager>().DisplayInventory();
+            FindObjectOfType<UI_Manager>().score++;
+        }
+
+        // If the player collides with the collider called POTION
+        // Then call the Display Potion Text function from the UI script
+        // Set the boolean buyi potion to TRUE
+        if (other.gameObject.tag == "Potion")
+        {
+            FindObjectOfType<UI_Manager>().DisplayPotionText();
+            isBuyingPotion = true;
+        }
+
+        // If the player collides with the collider called ENEMY
+        // Subtract 20 from the health
+        if (other.gameObject.tag == "Enemy")
+        {
+            health -= 20;
+        }
+
     }
 
-    // A function which replenishes the player's health
-    // Prints out text
-    // Adds the given amount to the variable playerHealth
-    // Prints out how much health is remaining
-    void ReplenishHealth(int amount)
+    // Funtion for when the player leaves the collider box
+    private void OnTriggerExit(Collider other)
     {
-        Debug.Log("You used a Health Pack.");
-        playerHealth += amount;
-        Debug.Log(string.Format("You have {0} health.", playerHealth));
+        // If the player leaves the collider called SHOP
+        // Call the function Delete Merchant Text from the UI script
+        if (other.gameObject.tag == "Shop")
+        {
+            FindObjectOfType<UI_Manager>().DeleteMerchantText1();
+        }
+
+        // If the player leaves the collider called Potion Trigger
+        // Call the function Delete Potion Text from the UI script
+        if (other.gameObject.name == "Buy_Potion_Trigger")
+        {
+            FindObjectOfType<UI_Manager>().DeletePotionText();
+        }
     }
 }
